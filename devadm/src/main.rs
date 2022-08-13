@@ -124,7 +124,7 @@ fn show_devices(_opts: &Opts, s: &Show) -> Result<()> {
             "-----".bright_black(),
         )?;
         for (prop_name, value) in dev_info.props {
-            writeln!(&mut tw, "{}\t{}", prop_name, format!("{}", value))?;
+            writeln!(&mut tw, "{}\t{}", prop_name, value)?;
         }
         tw.flush()?;
         println!();
