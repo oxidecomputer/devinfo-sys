@@ -311,12 +311,20 @@ extern "C" {
     ) -> c_int;
 }
 
+#[derive(PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct DeviceKey {
+    pub node_name: String,
+    pub unit_address: Option<String>,
+}
+
 struct Context {
-    info: BTreeMap<String, DeviceInfo>,
+    info: BTreeMap<DeviceKey, DeviceInfo>,
     fetch_prom: bool,
 }
 
-pub fn get_devices(fetch_prom: bool) -> Result<BTreeMap<String, DeviceInfo>> {
+pub fn get_devices(
+    fetch_prom: bool,
+) -> Result<BTreeMap<DeviceKey, DeviceInfo>> {
     let path = std::ffi::CString::new("/").unwrap();
     let root_node = unsafe {
         di_init(
@@ -355,7 +363,8 @@ extern "C" fn node_info(node: di_node_t, arg: *mut c_void) -> c_int {
     let ctx = unsafe { &mut *(arg as *mut Context) };
 
     let cs = unsafe { CStr::from_ptr(di_node_name(node)) };
-    let node_name = cs.to_str().unwrap();
+    let node_name = cs.to_str().unwrap().to_owned();
+    let mut unit_address = None;
 
     let mut info = DeviceInfo::new();
 
@@ -441,6 +450,9 @@ extern "C" fn node_info(node: di_node_t, arg: *mut c_void) -> c_int {
                     for x in &values {
                         vals.push(x.to_string());
                     }
+                    if prop_name == "unit-address" && !vals.is_empty() {
+                        unit_address = Some(vals[0].clone());
+                    }
                     info.props.insert(
                         prop_name.to_string(),
                         DiPropValue::Strings(vals),
@@ -483,7 +495,13 @@ extern "C" fn node_info(node: di_node_t, arg: *mut c_void) -> c_int {
         unsafe { di_prom_fini(ph) };
     }
 
-    ctx.info.insert(node_name.to_string(), info);
+    ctx.info.insert(
+        DeviceKey {
+            node_name,
+            unit_address,
+        },
+        info,
+    );
 
     DI_WALK_CONTINUE
 }

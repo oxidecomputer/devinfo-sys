@@ -74,10 +74,10 @@ fn main() -> Result<()> {
 fn show_devices(_opts: &Opts, s: &Show) -> Result<()> {
     let info = get_devices(s.prom)?;
 
-    for (name, dev_info) in info {
+    for (key, dev_info) in info {
         match &s.filter {
             Some(f) => {
-                if !name.eq(f) {
+                if !key.node_name.eq(f) {
                     continue;
                 }
             }
@@ -112,8 +112,14 @@ fn show_devices(_opts: &Opts, s: &Show) -> Result<()> {
             None => {}
         }
 
-        println!("{}", name.bright_blue().bold());
-        println!("{}", "=".repeat(name.len()).bright_black());
+        let label = match key.unit_address {
+            Some(a) => {
+                format!("{}@{}", key.node_name, a)
+            }
+            None => key.node_name.clone(),
+        };
+        println!("{}", label.bright_blue().bold());
+        println!("{}", "=".repeat(label.len()).bright_black());
 
         let mut tw = TabWriter::new(stdout());
         writeln!(&mut tw, "{}\t{}", "property".dimmed(), "value".dimmed())?;
