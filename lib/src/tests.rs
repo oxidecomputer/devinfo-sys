@@ -4,13 +4,17 @@
 
 // Copyright 2022 Oxide Computer Company
 
+use crate::sys::DeviceKey;
 use std::io::Result;
 
 /// Assert that we can find a CPU. Should work on any platform.
 #[test]
 fn find_cpu() -> Result<()> {
     let devs = crate::get_devices(false)?;
-    let cpu = devs.get("cpu");
+    let cpu = devs.get(&DeviceKey {
+        node_name: "cpu".to_owned(),
+        unit_address: Some("0".to_owned()),
+    });
     assert!(cpu.is_some());
 
     // check that CPU has a vendor
